@@ -1,3 +1,4 @@
+import math
 import torch
 from torch import tensor as T
 
@@ -5,43 +6,41 @@ from torch import tensor as T
 Giant FFT resampling
 
 Based on method proposed in:
-Vesa Välimäki and Stefan Bilbao, "Giant FFTs for Sample-Rate Conversion" in Journal Audio Eng. Soc. (JAES), 2023
+Vesa Välimäki and Stefan Bilbao, "Giant FFTs for Sample-Rate Conversion" in Journal of the Audio Eng. Soc. (JAES), 2023
 https://www.aes.org/e-lib/browse.cfm?elib=22033
 
+for best results x should be even-length
+
 '''
+
+
 def giant_fft_resample(x: T, orig_freq: int, new_freq: int):
-    if orig_freq > new_freq:
-        return _giant_fft_upsample(x, orig_freq, new_freq)
+
+    # lengths
+    n_in = x.shape[-1]
+    m = 2 * math.ceil(n_in / 2 / orig_freq)  # fft zero-pad factor
+    n_fft_orig = m * orig_freq
+    n_fft_new = m * new_freq
+    n_out = math.ceil(new_freq / orig_freq * n_in)
+
+    # fft
+    x_fft_og = torch.fft.rfft(x, n_fft_orig)
+    x_fft_new = torch.zeros((1, n_fft_new // 2 + 1), dtype=x_fft_og.dtype, device=x_fft_og.device)
+
+    if new_freq > orig_freq:
+        # pad fft
+        x_fft_new[..., 0:n_fft_orig // 2] = x_fft_og[..., 0:n_fft_orig // 2].clone()
+        x_fft_new[..., n_fft_orig // 2] = 0.5 * x_fft_og[..., n_fft_orig // 2].clone()
     else:
-        return _giant_fft_downsample(x, orig_freq, new_freq)
+        # truncate fft
+        x_fft_new[..., 0:n_fft_new // 2] = x_fft_og[..., 0:n_fft_new // 2].clone()
+
+    # ifft
+    x_new = torch.fft.irfft(x_fft_new)
+
+    # truncate and scale
+    return x_new[..., :n_out] * new_freq / orig_freq
 
 
-def _giant_fft_upsample(x: T, orig_freq: int, new_freq: int):
-
-    N = x.shape[-1]
-    X = torch.fft.fft(x)
-    N_up = new_freq * N // orig_freq
-    X_up = torch.zeros((1, N_up), dtype=X.dtype)
-
-    X_up[..., 0:N//2] = X[..., 0:N//2].clone()
-    X_up[..., N//2] = 0.5 * X[..., N//2].clone()
-    X_up[..., N_up - N//2] = 0.5 * X[..., N//2].clone()
-    X_up[..., N_up - N // 2 + 1:] = torch.conj(X_up[..., 1:N//2].clone()).flip(-1)
-    x_up = torch.fft.ifft(X_up)
-    return torch.real(x_up) * new_freq / orig_freq
-
-
-def _giant_fft_downsample(x: T, orig_freq: int, new_freq: int):
-
-    N = x.shape[-1]
-    X = torch.fft.fft(x)
-    N_down = new_freq * N // orig_freq
-    X_down = torch.zeros((1, N_down), dtype=X.dtype)
-
-    X_down[..., 0:N_down//2] = X[..., 0:N_down//2].clone()
-    X_down[..., N_down//2] = 0.0
-    X_down[..., N_down // 2 + 1:] = torch.conj(X_down[..., 1:N_down//2].clone()).flip(-1)
-    x_down = torch.fft.ifft(X_down)
-    return torch.real(x_down) * new_freq / orig_freq
 
 
