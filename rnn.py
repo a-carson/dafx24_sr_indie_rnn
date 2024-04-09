@@ -44,6 +44,9 @@ class AudioRNN(torch.nn.Module):
         self.state = None
 
     def forward(self, x):
+        ndim = x.ndim
+        if ndim == 2:
+            x = x.unsqueeze(2)
 
         states, last_state = self.rec(x, self.state)
         out = self.linear(states)
@@ -51,6 +54,10 @@ class AudioRNN(torch.nn.Module):
             out += x[..., 0].unsqueeze(-1)
 
         self.state = last_state
+
+        if ndim == 2:
+            out = out.squeeze(2)
+
         return out, states
 
     def reset_state(self):
