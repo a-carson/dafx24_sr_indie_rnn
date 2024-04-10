@@ -1,0 +1,12 @@
+name: sr_indie_rnn
+channels:
+  - defaults
+dependencies:
+  - python=3.10
+  - pip
+  - pip:
+    - matplotlib
+    - pip-chill
+    - soundfile
+    - torchaudio
+    - torchvision
