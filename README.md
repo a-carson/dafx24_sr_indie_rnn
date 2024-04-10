@@ -2,7 +2,9 @@
 <h1 align="center">Sample Rate Independent Recurrent Neural Networks for Audio Effects Processing</h1> 
 
 <p align="center">Alistair Carson, Alec Wright, Jatin Chowdhury, Vesa Välimäki and Stefan Bilbao.
-</p>
+
+
+<p align="center">Accompanying code for DAFx23 submission.</p>
 
 <p align="center">Audio examples available <a href="https://a-carson.github.io/sr_indie_rnn/">here</a>. 
 </p>
