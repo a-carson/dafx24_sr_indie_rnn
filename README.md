@@ -1,3 +1,4 @@
+<html>
 <head>
 <style>
 h1 {text-align: center;}
@@ -34,3 +35,4 @@ conda activate sr_indie_rnn
 
 
 </body>
+</html>
