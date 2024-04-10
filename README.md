@@ -1,17 +1,11 @@
-<html>
-<head>
-<style>
-h1 {text-align: center;}
-</style>
-</head>
-<body>
 
+<h1 align="center">Sample Rate Independent Recurrent Neural Networks for Audio Effects Processing</h1> 
 
-# Sample Rate Independent Recurrent Neural Networks for Audio Effects Processing</h1> 
+<p align="center">Alistair Carson, Alec Wright, Jatin Chowdhury, Vesa Välimäki and Stefan Bilbao.
+</p>
 
-Accompanying code for DAFx24 submission by Alistair Carson, Alec Wright, Jatin Chowdhury, Vesa Välimäki and Stefan Bilbao.
-
-Audio examples: https://a-carson.github.io/sr_indie_rnn/
+<p align="center">Audio examples available <a href="https://a-carson.github.io/sr_indie_rnn/">here</a>. 
+</p>
 
 
 #### Description of repo contents
@@ -33,6 +27,3 @@ conda env create -f conda_env_cpu.yaml
 conda activate sr_indie_rnn
 ```
 
-
-</body>
-</html>
