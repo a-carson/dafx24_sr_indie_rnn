@@ -1,25 +1,24 @@
 import copy
 import json
+import math
 import torch
-import numpy as np
+from torch import Tensor as T
+from typing import List, Callable
 
 
-def vector_to_tuple(x):
+def vector_to_tuple(x: T) -> tuple[T, T]:
     num_states = x.shape[-1]
     assert ((num_states % 2) == 0)
     return x[..., :num_states // 2], x[..., num_states // 2:]
 
-
-def tuple_to_vector(t):
+def tuple_to_vector(t: tuple[T, T]) -> T:
     return torch.cat(t, dim=-1)
 
-
-def lstm_cell_forward(cell_function, x, h):
+def lstm_cell_forward(cell_function: Callable[[T, tuple[T, T]], tuple], x: T, h: T) -> T:
     hc = cell_function(x, vector_to_tuple(h))
     return tuple_to_vector(hc)
 
-
-def rnn_cell_forward(cell_function, x, h):
+def rnn_cell_forward(cell_function, x: T, h: T) -> T:
     return cell_function(x, h)
 
 
@@ -53,8 +52,6 @@ class AudioRNN(torch.nn.Module):
         if self.residual:
             out += x[..., 0].unsqueeze(-1)
 
-        self.state = last_state
-
         if ndim == 2:
             out = out.squeeze(2)
 
@@ -85,8 +82,10 @@ class STN_RNN(torch.nn.Module):
         self.hidden_size = self.cell.hidden_size
         if type(self.cell) == torch.nn.LSTMCell:
             self.cell_forward = lstm_cell_forward
+            self.state_size = 2 * self.hidden_size
         else:
             self.cell_forward = rnn_cell_forward
+            self.state_size = self.hidden_size
 
     def forward(self, x, h=None):
 
@@ -94,14 +93,10 @@ class STN_RNN(torch.nn.Module):
         num_samples = x.shape[1]
         k = 1/self.os_factor
 
-        if type(self.cell) == torch.nn.LSTMCell:
-            state_size = 2 * self.hidden_size
-        else:
-            state_size = self.hidden_size
 
         if h is None:
-            h = torch.zeros(batch_size, state_size, device=x.device)
-        states = torch.zeros(batch_size, num_samples, state_size, device=x.device)
+            h = x.new_zeros(batch_size, self.state_size, device=x.device)
+        states = x.new_zeros(batch_size, num_samples, self.state_size, device=x.device)
 
 
         for i in range(num_samples):
@@ -130,8 +125,10 @@ class LIDL_RNN(torch.nn.Module):
 
         if type(self.cell) == torch.nn.LSTMCell:
             self.cell_forward = lstm_cell_forward
+            self.state_size = 2 * self.hidden_size
         else:
             self.cell_forward = rnn_cell_forward
+            self.state_size = self.hidden_size
 
     def forward(self, x, h=None):
 
@@ -139,17 +136,12 @@ class LIDL_RNN(torch.nn.Module):
         num_samples = x.shape[1]
 
         # lin. interp setup
-        delay_near = int(np.floor(self.os_factor))
-        delay_far = int(np.ceil(self.os_factor))
+        delay_near = math.floor(self.os_factor)
+        delay_far = math.ceil(self.os_factor)
         alpha = self.os_factor - delay_near
 
-        if type(self.cell) == torch.nn.LSTMCell:
-            state_size = 2 * self.hidden_size
-        else:
-            state_size = self.hidden_size
-
         if h is None:
-            states = torch.zeros(batch_size, num_samples, state_size, device=x.device)
+            states = x.new_zeros(batch_size, num_samples, self.state_size)
         else:
             states = tuple_to_vector(h)
 
@@ -162,19 +154,22 @@ class LIDL_RNN(torch.nn.Module):
 
         return states[..., :self.hidden_size], vector_to_tuple(states)
 
-
-class CIDL_RNN(torch.nn.Module):
+class LagrangeInterp_RNN(torch.nn.Module):
     def __init__(self, cell: torch.nn.RNNCellBase,
-                 os_factor=1.0):
+                             os_factor=1.0,
+                             order=3):
         super().__init__()
         self.os_factor = os_factor
+        self.order = order
         self.cell = cell
         self.hidden_size = self.cell.hidden_size
 
         if type(self.cell) == torch.nn.LSTMCell:
             self.cell_forward = lstm_cell_forward
+            self.state_size = 2 * self.hidden_size
         else:
             self.cell_forward = rnn_cell_forward
+            self.state_size = self.hidden_size
 
     def forward(self, x, h=None):
 
@@ -182,44 +177,35 @@ class CIDL_RNN(torch.nn.Module):
         num_samples = x.shape[1]
 
         # lagrange interp setup
-        order = 3
         if self.os_factor >= 2:
-            delta = self.os_factor - np.floor(self.os_factor) + 1
-            epsilon = int(np.floor(self.os_factor)) - 1
+            delta = self.os_factor - math.floor(self.os_factor) + 1
+            epsilon = math.floor(self.os_factor) - 1
         else:
             delta = self.os_factor - 1
-            epsilon = int(np.floor(self.os_factor))
+            epsilon = math.floor(self.os_factor)
 
-
-        kernel = torch.zeros(order+1)
-        kernel[0] = -(delta - 1) * (delta - 2) * (delta - 3) / 6
-        kernel[1] = delta * (delta - 2) * (delta - 3) / 2
-        kernel[2] = -delta * (delta - 1) * (delta - 3) / 2
-        kernel[3] = delta * (delta - 1) * (delta - 2) / 6
-
-
-        if type(self.cell) == torch.nn.LSTMCell:
-            state_size = 2 * self.hidden_size
-        else:
-            state_size = self.hidden_size
+        kernel = x.new_ones(self.order+1)
+        for n in range(self.order+1):
+            for k in range(self.order+1):
+                if k != n:
+                    kernel[n] *= (delta - k) / (n - k)
 
         if h is None:
-            states = torch.zeros(batch_size, num_samples, state_size, device=x.device)
+            states = x.new_zeros(batch_size, num_samples, self.state_size, device=x.device)
+            prev_states = x.new_zeros(batch_size, self.order+1, self.state_size, device=x.device)
         else:
             states = tuple_to_vector(h)
+            prev_states = states[:, -3:, :]
 
         for i in range(x.shape[1]):
-            # lin. interp
-            h_read = kernel[0] * states[:, i - epsilon, :] + \
-                     kernel[1] * states[:, i - epsilon - 1, :] + \
-                     kernel[2] * states[:, i - epsilon - 2, :] + \
-                     kernel[3] * states[:, i - epsilon - 3, :]
-
+            h_read = kernel @ prev_states
             xi = x[:, i, :]
             h = self.cell_forward(self.cell.forward, xi, h_read)
             states[:, i, :] = h
+            prev_states[:, -1, :] = states[:, i - epsilon + 1, :].detach()
+            prev_states = torch.roll(prev_states, dims=1, shifts=1)
 
-        return states[..., :self.hidden_size], vector_to_tuple(states)
+        return states[..., :self.hidden_size], h
 
 
 class APDL_RNN(torch.nn.Module):
@@ -232,27 +218,23 @@ class APDL_RNN(torch.nn.Module):
 
         if type(self.cell) == torch.nn.LSTMCell:
             self.cell_forward = lstm_cell_forward
+            self.state_size = 2 * self.hidden_size
         else:
             self.cell_forward = rnn_cell_forward
+            self.state_size = self.hidden_size
 
     def forward(self, x, h=None):
 
         batch_size = x.shape[0]
         num_samples = x.shape[1]
 
-        # lin. interp setup
-        delay_near = int(np.floor(self.os_factor))
-        delay_far = int(np.floor(self.os_factor)) + 1
+        delay_near = math.floor(self.os_factor)
+        delay_far = math.floor(self.os_factor) + 1
         alpha = self.os_factor - delay_near
         allpass_coeff = (1 - alpha) / (1 + alpha)
 
-        if type(self.cell) == torch.nn.LSTMCell:
-            state_size = 2 * self.hidden_size
-        else:
-            state_size = self.hidden_size
-
-        states = torch.zeros(batch_size, num_samples, state_size, device=x.device)
-        ap_state = torch.zeros(batch_size, state_size, device=x.device)
+        states = x.new_zeros(batch_size, num_samples, self.state_size)
+        ap_state = x.new_zeros(batch_size, self.state_size)
 
         if h is not None:
             states[..., :self.hidden_size] = h[0]
@@ -260,7 +242,7 @@ class APDL_RNN(torch.nn.Module):
             ap_state = h[2]
 
         for i in range(x.shape[1]):
-            ap_state = (1 - alpha) / (1 + alpha) * (states[:, i - delay_near, :] - ap_state) + states[:, i - delay_far, :]
+            ap_state = allpass_coeff * (states[:, i - delay_near, :] - ap_state) + states[:, i - delay_far, :]
             xi = x[:, i, :]
             h_write = self.cell_forward(self.cell.forward, xi, ap_state)
             states[:, i, :] = h_write
@@ -318,8 +300,6 @@ def get_SRIndieRNN(base_model: AudioRNN, method: str):
     elif method == 'stn':
         model.rec = STN_RNN(cell=cell)
     elif method == 'cidl':
-        model.rec = CIDL_RNN(cell=cell)
+        model.rec = LagrangeInterp_RNN(cell=cell, order=3)
 
     return model
-
-
