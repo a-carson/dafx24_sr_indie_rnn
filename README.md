@@ -18,6 +18,9 @@
 
 `process_audio.py` shows an example use case and computes SNR of modified-RNN output compared to the original RNN at the training sample-rate.
 
+`sine_analysis.py` compares the different models for sinusoidal inputs and plots SNR vs input frequency (see Fig. 8 in paper). This takes a while to run!
+
+
 `Proteus_Tone_Packs/` contains some pre-trained LSTM models, obtained from the <a href="https://guitarml.com/tonelibrary/tonelib-pro.html">Guitar ML Tone Library</a>. More can be downloaded from this link.
 
 `audio/` contains the test signal used to generate results in the paper. 
