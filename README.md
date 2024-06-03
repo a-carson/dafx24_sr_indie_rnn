@@ -4,11 +4,13 @@
 <p align="center">Alistair Carson, Alec Wright, Jatin Chowdhury, Vesa Välimäki and Stefan Bilbao.
 
 
-<p align="center">Accompanying code for DAFx23 submission.</p>
+<p align="center">Accompanying code for the DAFx24 paper.</p>
 
-<p align="center">Audio examples available <a href="https://a-carson.github.io/sr_indie_rnn/">here</a>. 
-</p>
+<div align="center">
 
+[![Audio Examples](https://img.shields.io/badge/%F0%9F%94%8A-Audio_Examples-blue)](https://a-carson.github.io/dafx24_sr_indie_rnn/)
+
+</div>
 
 #### Description of repo contents
 
