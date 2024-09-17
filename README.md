@@ -8,8 +8,8 @@
 
 <div align="center">
 
+[![arXiv](https://img.shields.io/badge/arXiv-2406.06293-b31b1b.svg)](https://arxiv.org/abs/2406.06293)
 [![Audio Examples](https://img.shields.io/badge/%F0%9F%94%8A-Audio_Examples-blue)](https://a-carson.github.io/dafx24_sr_indie_rnn/)
-
 </div>
 
 #### Description of repo contents
