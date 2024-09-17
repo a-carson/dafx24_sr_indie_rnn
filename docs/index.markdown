@@ -3,24 +3,46 @@ layout: splash
 classes:
   - wide
 ---
-<h2 align="center">Sample Rate Independent Recurrent Neural Networks for Audio Effects Processing</h2>
-<p style="font-size: 0.75em" align="center">
-Alistair Carson, Alec Wright, Jatin Chowdhury, Vesa Välimäki and Stefan Bilbao</p>
-<p style="font-size: 0.75em" align="center">
-Welcome to the accompanying web-page for our DAFx24 submission.</p>
-<p style="font-size: 0.75em" align="center">
-For example code see <a href="https://github.com/a-carson/dafx24_sr_indie_rnn?tab=readme-ov-file" target="_blank" rel="noopener noreferrer"> here</a>.</p>
 
 
 
 
-###### <b>Abstract</b>
+<h2 align="center" style="font-size: 1.4em">Sample Rate Independent Recurrent Neural Networks for Audio Effects Processing</h2>
+<p style="font-size: 1.0em" align="center">
+Alistair Carson<sup>1</sup>, Alec Wright<sup>1</sup>, Jatin Chowdhury<sup>2</sup>, Vesa Välimäki<sup>3</sup> and Stefan Bilbao<sup>1</sup></p>
+
+<p style="text-align: center; font-size: 0.75em">
+    <i>
+    <sup>1</sup><a href="https://www.acoustics.ed.ac.uk/" target="_blank" rel="noopener noreferrer">Acoustics and Audio Group</a>, University of Edinburgh, Edinburgh, UK<br>
+    <sup>2</sup><a href="https://chowdsp.com/" target="_blank" rel="noopener noreferrer">Chowdhury DSP</a>, Sammamish, WA, USA<br>
+    <sup>3</sup><a href="https://www.aalto.fi/en/aalto-acoustics-lab" target="_blank" rel="noopener noreferrer">Acoustics Lab</a>, Department of Information and Communications Engineering, Aalto University, Espoo, Finland <br>
+    </i>
+</p>
+
+<p style="font-size: 1.0em" align="center">
+Welcome to the accompanying web-page for our DAFx24 paper.</p>
+<div style="text-align: center">
+    <a href="https://www.dafx.de/paper-archive/2024/papers/DAFx24_paper_68.pdf" 
+        class="btn btn--primary btn--small"
+        target="_blank" rel="noopener noreferrer">
+    🗞️ Paper
+    </a>
+    <a href="https://github.com/a-carson/dafx24_sr_indie_rnn?tab=readme-ov-file" 
+        class="btn btn--primary btn--small"
+        target="_blank" rel="noopener noreferrer">
+    </> Code
+    </a>
+</div>
+
+
+
+##### <b>Abstract</b>
 <p style="font-size: 0.75em">
 In recent years, machine learning approaches to modelling guitar amplifiers and effects pedals have been widely investigated and have become standard practice in some consumer products. In particular, recurrent neural networks (RNNs) are a popular choice for modelling non-linear devices such as vacuum tube amplifiers and distortion circuitry. One limitation of such models is that they are trained on audio at a specific sample rate and therefore give unreliable results when operating at another rate. Here, we investigate several methods of modifying RNN structures to make them approximately sample rate independent, with a focus on oversampling. In the case of integer oversampling, we demonstrate that a previously proposed delay-based approach provides high fidelity sample rate conversion whilst additionally reducing aliasing. For non-integer sample rate adjustment, we propose two novel methods and show that one of these, based on cubic Lagrange interpolation of a delay-line, provides a significant improvement over existing methods. To our knowledge, this work provides the first in-depth study into this problem.
 </p>
 
 
-###### <b>Audio Examples</b>
+##### <b>Audio Examples</b>
 <p style="font-size: 0.75em">
 Below are examples of five LSTM RNN models from the <a href="https://guitarml.com/tonelibrary/tonelib-pro.html" target="_blank" rel="noopener noreferrer">GuitarML Tone Library</a>. 
 These models are designed for operation at a sample rate (SR) of 44.1kHz. The audio examples below are the output signals when operating at different inference SRs, using the methods outlined in the paper:
